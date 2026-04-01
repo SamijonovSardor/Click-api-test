@@ -29,6 +29,8 @@ class Order(Base):
     click_paydoc_id = Column(Integer, nullable=True)
     merchant_prepare_id = Column(Integer, nullable=True)
     merchant_confirm_id = Column(Integer, nullable=True)
+    card_token = Column(String, nullable=True)
+    payment_id = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)

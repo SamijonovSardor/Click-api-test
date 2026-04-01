@@ -7,16 +7,12 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-
         .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-
         h1 { font-size: 2rem; margin-bottom: 8px; }
         .subtitle { color: #94a3b8; margin-bottom: 40px; }
 
-        /* Payment card */
         .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; margin-bottom: 32px; }
         .card h2 { font-size: 1.2rem; margin-bottom: 20px; }
-
         .price { font-size: 2.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 4px; }
         .price-note { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
 
@@ -27,83 +23,145 @@
             border-radius: 10px; color: #e2e8f0; font-size: 1rem; outline: none; transition: border 0.2s;
         }
         .form-group input:focus { border-color: #38bdf8; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
 
         .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 28px; border: none; border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 28px; border: none; border-radius: 12px; width: 100%;
             font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
-        .btn-primary { background: #2563eb; color: white; width: 100%; justify-content: center; }
+        .btn-primary { background: #2563eb; color: white; }
         .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-        .btn-test { background: #059669; color: white; font-size: 0.85rem; padding: 8px 16px; border-radius: 8px; }
-        .btn-test:hover { background: #047857; }
+        .btn-green { background: #059669; color: white; }
+        .btn-green:hover { background: #047857; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* Orders table */
+        .hidden { display: none; }
+        .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 8px; }
+        .success-msg { color: #22c55e; font-size: 0.85rem; margin-top: 8px; }
+        .info-msg { color: #38bdf8; font-size: 0.85rem; margin-top: 8px; }
+
+        /* Steps indicator */
+        .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+        .step { flex: 1; padding: 8px; border-radius: 8px; text-align: center; font-size: 0.8rem; font-weight: 600; background: #0f172a; color: #475569; }
+        .step.active { background: #2563eb20; color: #60a5fa; border: 1px solid #2563eb40; }
+        .step.done { background: #05966920; color: #34d399; }
+
+        /* Card visual */
+        .card-preview {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            border-radius: 12px; padding: 20px; margin-bottom: 20px; color: white; position: relative; overflow: hidden;
+        }
+        .card-preview::after { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); }
+        .card-preview .card-number { font-size: 1.3rem; letter-spacing: 2px; margin: 16px 0; font-family: monospace; }
+        .card-preview .card-label { font-size: 0.7rem; color: rgba(255,255,255,0.6); }
+        .card-preview .card-expire { font-size: 0.9rem; }
+
+        /* Orders */
         .orders { margin-top: 40px; }
         .orders h2 { font-size: 1.2rem; margin-bottom: 16px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #1e293b; }
         th { color: #64748b; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
         td { font-size: 0.9rem; }
-
-        .badge {
-            display: inline-block; padding: 4px 10px; border-radius: 6px;
-            font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-        }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
         .badge-pending { background: #fbbf2420; color: #fbbf24; }
         .badge-waiting { background: #38bdf820; color: #38bdf8; }
         .badge-paid { background: #22c55e20; color: #22c55e; }
         .badge-cancelled { background: #ef444420; color: #ef4444; }
-
         .empty { text-align: center; color: #475569; padding: 40px; }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; width: auto; }
 
-        /* Click logo styling */
-        .click-badge { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; margin-top: 16px; justify-content: center; }
-
-        .test-section { margin-top: 12px; padding-top: 16px; border-top: 1px solid #334155; }
-        .test-note { color: #64748b; font-size: 0.8rem; margin-bottom: 8px; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Click Payment Test</h1>
-        <p class="subtitle">SaaS subscription to'lov testi</p>
+        <p class="subtitle">SaaS subscription to'lov testi — karta orqali</p>
 
         <div class="card">
             <h2>Obuna sotib olish</h2>
             <div class="price">{{ "{:,.0f}".format(price) }} so'm</div>
             <p class="price-note">Oylik SaaS obuna</p>
 
-            <form action="/create-order" method="post">
+            <!-- Steps -->
+            <div class="steps">
+                <div class="step active" id="step1-indicator">1. Ma'lumotlar</div>
+                <div class="step" id="step2-indicator">2. SMS kod</div>
+                <div class="step" id="step3-indicator">3. To'lov</div>
+            </div>
+
+            <!-- Step 1: Email + Card -->
+            <div id="step1">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" placeholder="email@example.com" required>
+                    <input type="email" id="email" placeholder="email@example.com" required>
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    Click orqali to'lash
-                </button>
-            </form>
 
-            <div class="click-badge">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                Xavfsiz to'lov — Click.uz
+                <div class="card-preview">
+                    <div class="card-label">Karta raqami</div>
+                    <div class="card-number" id="card-display">**** **** **** ****</div>
+                    <div class="card-label">Amal muddati</div>
+                    <div class="card-expire" id="expire-display">MM/YY</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Karta raqami</label>
+                    <input type="text" id="card_number" placeholder="8600 1234 5678 9012" maxlength="19" inputmode="numeric">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amal muddati (MM/YY)</label>
+                        <input type="text" id="expire_date" placeholder="MM/YY" maxlength="5" inputmode="numeric">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="btn-request-token" onclick="requestToken()">
+                    Davom etish
+                </button>
+                <div id="step1-error" class="error-msg hidden"></div>
+            </div>
+
+            <!-- Step 2: SMS Code -->
+            <div id="step2" class="hidden">
+                <p class="info-msg" style="margin-bottom:16px" id="sms-info">SMS kod yuborildi</p>
+                <div class="form-group">
+                    <label>SMS kod</label>
+                    <input type="text" id="sms_code" placeholder="123456" maxlength="6" inputmode="numeric">
+                </div>
+                <button class="btn btn-primary" id="btn-verify" onclick="verifyCode()">
+                    Tasdiqlash
+                </button>
+                <div id="step2-error" class="error-msg hidden"></div>
+            </div>
+
+            <!-- Step 3: Confirm payment -->
+            <div id="step3" class="hidden">
+                <p class="success-msg" style="margin-bottom:16px">Karta tasdiqlandi! To'lovni amalga oshiring.</p>
+                <button class="btn btn-green" id="btn-pay" onclick="makePayment()">
+                    {{ "{:,.0f}".format(price) }} so'm to'lash
+                </button>
+                <div id="step3-error" class="error-msg hidden"></div>
+            </div>
+
+            <!-- Done -->
+            <div id="step-done" class="hidden" style="text-align:center; padding: 20px 0;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><polyline points="16 10 11 15 8 12"/></svg>
+                <h2 style="color:#22c55e; margin-bottom:8px;">To'lov muvaffaqiyatli!</h2>
+                <p class="info-msg">Obuna faollashtirildi</p>
             </div>
         </div>
 
+        <!-- Orders table -->
         <div class="orders">
             <h2>Buyurtmalar</h2>
             {% if orders %}
             <table>
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Summa</th>
-                        <th>Holat</th>
-                        <th>Sana</th>
-                        <th></th>
-                    </tr>
+                    <tr><th>ID</th><th>Email</th><th>Summa</th><th>Holat</th><th>Sana</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for order in orders %}
@@ -112,24 +170,17 @@
                         <td>{{ order.user_email }}</td>
                         <td>{{ "{:,.0f}".format(order.amount) }} so'm</td>
                         <td>
-                            {% if order.status == 'paid' %}
-                                <span class="badge badge-paid">To'langan</span>
-                            {% elif order.status == 'waiting' %}
-                                <span class="badge badge-waiting">Kutilmoqda</span>
-                            {% elif order.status == 'cancelled' %}
-                                <span class="badge badge-cancelled">Bekor</span>
-                            {% else %}
-                                <span class="badge badge-pending">Yangi</span>
-                            {% endif %}
+                            {% if order.status == 'paid' %}<span class="badge badge-paid">To'langan</span>
+                            {% elif order.status == 'waiting' %}<span class="badge badge-waiting">Kutilmoqda</span>
+                            {% elif order.status == 'cancelled' %}<span class="badge badge-cancelled">Bekor</span>
+                            {% else %}<span class="badge badge-pending">Yangi</span>{% endif %}
                         </td>
                         <td>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
                         <td>
                             {% if order.status != 'paid' %}
-                            <div class="test-section">
-                                <form action="/test/simulate-payment/{{ order.id }}" method="post" style="display:inline">
-                                    <button type="submit" class="btn btn-test">Test: To'lovni simulyatsiya</button>
-                                </form>
-                            </div>
+                            <form action="/test/simulate-payment/{{ order.id }}" method="post" style="display:inline">
+                                <button type="submit" class="btn btn-sm btn-green">Simulyatsiya</button>
+                            </form>
                             {% endif %}
                         </td>
                     </tr>
@@ -141,5 +192,152 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        let currentOrderId = null;
+
+        // Format card number with spaces
+        document.getElementById('card_number').addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '').substring(0, 16);
+            let formatted = v.replace(/(.{4})/g, '$1 ').trim();
+            e.target.value = formatted;
+            document.getElementById('card-display').textContent = formatted || '**** **** **** ****';
+        });
+
+        // Format expire date
+        document.getElementById('expire_date').addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '').substring(0, 4);
+            if (v.length >= 2) v = v.substring(0, 2) + '/' + v.substring(2);
+            e.target.value = v;
+            document.getElementById('expire-display').textContent = v || 'MM/YY';
+        });
+
+        function setStep(step) {
+            ['step1', 'step2', 'step3', 'step-done'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(step).classList.remove('hidden');
+            // Update indicators
+            const steps = { 'step1': 1, 'step2': 2, 'step3': 3, 'step-done': 3 };
+            const current = steps[step] || 1;
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById(`step${i}-indicator`);
+                el.className = 'step' + (i < current ? ' done' : i === current ? ' active' : '');
+            }
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.dataset.text = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner"></span> Kutilmoqda...';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.text;
+            }
+        }
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        async function requestToken() {
+            const email = document.getElementById('email').value.trim();
+            const cardNumber = document.getElementById('card_number').value.trim();
+            const expireRaw = document.getElementById('expire_date').value.trim();
+
+            if (!email || !cardNumber || !expireRaw) {
+                showError('step1-error', 'Barcha maydonlarni to\'ldiring');
+                return;
+            }
+
+            // Convert MM/YY to MMYY
+            const expireDate = expireRaw.replace('/', '');
+            if (expireDate.length !== 4) {
+                showError('step1-error', 'Amal muddati noto\'g\'ri (MM/YY)');
+                return;
+            }
+
+            document.getElementById('step1-error').classList.add('hidden');
+            setLoading('btn-request-token', true);
+
+            try {
+                // Create order first
+                const orderResp = await fetch('/api/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `email=${encodeURIComponent(email)}`
+                });
+                const orderData = await orderResp.json();
+                if (!orderResp.ok) throw new Error(orderData.error || 'Order creation failed');
+                currentOrderId = orderData.order_id;
+
+                // Request card token
+                const tokenResp = await fetch('/api/card-token/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `order_id=${currentOrderId}&card_number=${encodeURIComponent(cardNumber)}&expire_date=${expireDate}`
+                });
+                const tokenData = await tokenResp.json();
+                if (!tokenResp.ok) throw new Error(tokenData.error || 'Token request failed');
+
+                document.getElementById('sms-info').textContent =
+                    `SMS kod ${tokenData.phone_number} raqamiga yuborildi`;
+                setStep('step2');
+            } catch (err) {
+                showError('step1-error', err.message);
+            } finally {
+                setLoading('btn-request-token', false);
+            }
+        }
+
+        async function verifyCode() {
+            const smsCode = document.getElementById('sms_code').value.trim();
+            if (!smsCode) { showError('step2-error', 'SMS kodni kiriting'); return; }
+
+            document.getElementById('step2-error').classList.add('hidden');
+            setLoading('btn-verify', true);
+
+            try {
+                const resp = await fetch('/api/card-token/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `order_id=${currentOrderId}&sms_code=${encodeURIComponent(smsCode)}`
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Verification failed');
+
+                setStep('step3');
+            } catch (err) {
+                showError('step2-error', err.message);
+            } finally {
+                setLoading('btn-verify', false);
+            }
+        }
+
+        async function makePayment() {
+            document.getElementById('step3-error').classList.add('hidden');
+            setLoading('btn-pay', true);
+
+            try {
+                const resp = await fetch('/api/card-token/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `order_id=${currentOrderId}`
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Payment failed');
+
+                setStep('step-done');
+                // Reload after 3 seconds to update table
+                setTimeout(() => location.reload(), 3000);
+            } catch (err) {
+                showError('step3-error', err.message);
+            } finally {
+                setLoading('btn-pay', false);
+            }
+        }
+    </script>
 </body>
 </html>
