@@ -7,7 +7,8 @@ from datetime import datetime
 from config import CLICK_SERVICE_ID, BASE_URL, SUBSCRIPTION_PRICE
 from database import init_db, get_db, Order, OrderStatus
 from click_service import handle_prepare, handle_complete
-from click_merchant_api import request_card_token, verify_card_token, pay_with_token
+from click_merchant_api import request_card_token, verify_card_token, pay_with_token, check_payment_status
+import asyncio
 
 app = FastAPI(title="Click Payment Test")
 templates = Environment(loader=FileSystemLoader("templates"), autoescape=True)
@@ -125,23 +126,45 @@ async def api_pay_with_token(
 
     result = await pay_with_token(order.card_token, order.amount, str(order.id))
 
-    if result.get("error_code", -1) != 0:
+    error_code = result.get("error_code", -1)
+    payment_id = result.get("payment_id")
+
+    # -501 means payment status unknown — check status after a short delay
+    if error_code == -501 and payment_id:
+        order.payment_id = payment_id
+        db.commit()
+        await asyncio.sleep(2)
+        status = await check_payment_status(str(payment_id))
+        payment_status = status.get("payment_status")
+        if payment_status == 2:  # 2 = successful
+            order.status = OrderStatus.PAID
+            order.paid_at = datetime.utcnow()
+            db.commit()
+            print(f"[PAYMENT] Order #{order.id} PAID (after status check) — payment_id: {payment_id}")
+            return {"success": True, "payment_id": payment_id}
+        else:
+            order.status = OrderStatus.WAITING
+            db.commit()
+            print(f"[PAYMENT] Order #{order.id} status unknown — payment_status: {payment_status}")
+            return {"success": True, "payment_id": payment_id, "status": "pending"}
+
+    if error_code != 0:
         order.status = OrderStatus.CANCELLED
         db.commit()
         return JSONResponse({
             "error": result.get("error_note", "Payment failed"),
-            "error_code": result.get("error_code"),
+            "error_code": error_code,
         }, status_code=400)
 
     # Payment successful
     order.status = OrderStatus.PAID
-    order.payment_id = result.get("payment_id")
+    order.payment_id = payment_id
     order.paid_at = datetime.utcnow()
     db.commit()
 
-    print(f"[PAYMENT] Order #{order.id} PAID — payment_id: {order.payment_id}")
+    print(f"[PAYMENT] Order #{order.id} PAID — payment_id: {payment_id}")
 
-    return {"success": True, "payment_id": order.payment_id}
+    return {"success": True, "payment_id": payment_id}
 
 
 # ─── Click SHOP-API Callbacks (kept for compatibility) ────

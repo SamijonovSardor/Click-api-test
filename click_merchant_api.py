@@ -99,6 +99,18 @@ async def pay_with_token(card_token: str, amount: float, transaction_id: str) ->
         return data
 
 
+async def check_payment_status(payment_id: str) -> dict:
+    """Check payment status by payment_id."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(
+            f"{BASE_URL}/payment/status/{CLICK_SERVICE_ID}/{payment_id}",
+            headers=_auth_header(),
+        )
+        data = resp.json()
+        print(f"[CLICK API] payment/status: {data}")
+        return data
+
+
 async def create_invoice(phone_number: str, amount: float, merchant_trans_id: str) -> dict:
     """
     Create invoice — sends push notification to user's Click app.
