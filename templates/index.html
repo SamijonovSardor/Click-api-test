@@ -75,6 +75,95 @@
 
         .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Receipt styles */
+        .receipt {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            color: #1e293b;
+            border-radius: 16px;
+            padding: 0;
+            margin: 20px auto;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .receipt::before, .receipt::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 16px;
+            background-image: radial-gradient(circle at 8px 8px, transparent 6px, #1e293b 6px);
+            background-size: 16px 16px;
+            background-position: 0 0;
+        }
+        .receipt::before { top: -8px; }
+        .receipt::after { bottom: -8px; transform: rotate(180deg); }
+        .receipt-header {
+            text-align: center;
+            padding: 32px 24px 20px;
+            border-bottom: 2px dashed #cbd5e1;
+        }
+        .receipt-check-icon {
+            width: 64px; height: 64px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+        }
+        .receipt-header h2 { color: #22c55e; font-size: 1.4rem; margin-bottom: 4px; }
+        .receipt-header p { color: #64748b; font-size: 0.85rem; }
+        .receipt-amount-block {
+            text-align: center;
+            padding: 24px;
+            border-bottom: 2px dashed #cbd5e1;
+        }
+        .receipt-amount-label { color: #64748b; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+        .receipt-amount { font-size: 2.2rem; font-weight: 700; color: #1e293b; }
+        .receipt-currency { font-size: 1rem; color: #64748b; margin-left: 4px; }
+        .receipt-body { padding: 20px 24px; }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 0;
+            gap: 12px;
+        }
+        .receipt-row:not(:last-child) { border-bottom: 1px solid #e2e8f0; }
+        .receipt-label { color: #64748b; font-size: 0.85rem; }
+        .receipt-value { color: #1e293b; font-size: 0.9rem; font-weight: 600; text-align: right; word-break: break-all; }
+        .receipt-footer {
+            background: #f1f5f9;
+            padding: 16px 24px;
+            text-align: center;
+            border-top: 2px dashed #cbd5e1;
+        }
+        .receipt-footer p { color: #94a3b8; font-size: 0.75rem; margin: 2px 0; }
+        .receipt-footer strong { color: #475569; font-size: 0.85rem; }
+
+        .receipt-actions {
+            display: flex;
+            gap: 12px;
+            max-width: 420px;
+            margin: 20px auto 0;
+        }
+        .receipt-actions .btn { flex: 1; }
+        .btn-outline {
+            background: transparent;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+        }
+        .btn-outline:hover { background: #1e293b; transform: translateY(-1px); }
+
+        @media print {
+            body * { visibility: hidden; }
+            .receipt, .receipt * { visibility: visible; }
+            .receipt { position: absolute; left: 0; top: 0; box-shadow: none; }
+        }
     </style>
 </head>
 <body>
@@ -147,11 +236,58 @@
                 <div id="step3-error" class="error-msg hidden"></div>
             </div>
 
-            <!-- Done -->
-            <div id="step-done" class="hidden" style="text-align:center; padding: 20px 0;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><polyline points="16 10 11 15 8 12"/></svg>
-                <h2 style="color:#22c55e; margin-bottom:8px;">To'lov muvaffaqiyatli!</h2>
-                <p class="info-msg">Obuna faollashtirildi</p>
+            <!-- Done: Receipt -->
+            <div id="step-done" class="hidden">
+                <div class="receipt" id="receipt">
+                    <div class="receipt-header">
+                        <div class="receipt-check-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <h2>To'lov muvaffaqiyatli</h2>
+                        <p>Obuna faollashtirildi</p>
+                    </div>
+                    <div class="receipt-amount-block">
+                        <div class="receipt-amount-label">To'langan summa</div>
+                        <div class="receipt-amount">
+                            <span id="receipt-amount">0</span><span class="receipt-currency">so'm</span>
+                        </div>
+                    </div>
+                    <div class="receipt-body">
+                        <div class="receipt-row">
+                            <span class="receipt-label">Buyurtma №</span>
+                            <span class="receipt-value" id="receipt-order-id">—</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">To'lov ID</span>
+                            <span class="receipt-value" id="receipt-payment-id">—</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Email</span>
+                            <span class="receipt-value" id="receipt-email">—</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Sana</span>
+                            <span class="receipt-value" id="receipt-date">—</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">To'lov usuli</span>
+                            <span class="receipt-value">Click (UZCARD)</span>
+                        </div>
+                    </div>
+                    <div class="receipt-footer">
+                        <strong>Sardex</strong>
+                        <p>Tashakkur! Xaridingiz uchun rahmat.</p>
+                    </div>
+                </div>
+
+                <div class="receipt-actions">
+                    <button class="btn btn-outline" onclick="backToPayment()">
+                        ← To'lovga qaytish
+                    </button>
+                    <button class="btn btn-green" onclick="downloadReceipt()">
+                        Chekni yuklab olish
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -327,16 +463,99 @@
                     body: `order_id=${currentOrderId}`
                 });
                 const data = await resp.json();
-                if (!resp.ok) throw new Error(data.error || 'Payment failed');
+                if (!resp.ok) throw new Error(data.error || 'To\'lov amalga oshmadi');
 
+                // Fetch receipt data
+                await loadReceipt(currentOrderId);
                 setStep('step-done');
-                // Reload after 3 seconds to update table
-                setTimeout(() => location.reload(), 3000);
             } catch (err) {
                 showError('step3-error', err.message);
             } finally {
                 setLoading('btn-pay', false);
             }
+        }
+
+        async function loadReceipt(orderId) {
+            try {
+                const resp = await fetch(`/api/receipt/${orderId}`);
+                const data = await resp.json();
+                if (!resp.ok) return;
+
+                document.getElementById('receipt-order-id').textContent = `#${data.order_id}`;
+                document.getElementById('receipt-payment-id').textContent = data.payment_id || '—';
+                document.getElementById('receipt-email').textContent = data.email;
+                document.getElementById('receipt-amount').textContent = Number(data.amount).toLocaleString('uz-UZ');
+                document.getElementById('receipt-date').textContent = data.paid_at || data.created_at || '—';
+            } catch (err) {
+                console.error('Failed to load receipt', err);
+            }
+        }
+
+        function backToPayment() {
+            // Reset form and go back to step 1
+            currentOrderId = null;
+            document.getElementById('email').value = '';
+            document.getElementById('card_number').value = '';
+            document.getElementById('expire_date').value = '';
+            document.getElementById('sms_code').value = '';
+            document.getElementById('card-display').textContent = '**** **** **** ****';
+            document.getElementById('expire-display').textContent = 'MM/YY';
+            ['step1-error', 'step2-error', 'step3-error'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            setStep('step1');
+            // Refresh orders table in background
+            fetch('/').then(r => r.text()).then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newOrders = doc.querySelector('.orders');
+                const currentOrders = document.querySelector('.orders');
+                if (newOrders && currentOrders) {
+                    currentOrders.innerHTML = newOrders.innerHTML;
+                }
+            }).catch(() => {});
+        }
+
+        function downloadReceipt() {
+            const orderId = document.getElementById('receipt-order-id').textContent;
+            const amount = document.getElementById('receipt-amount').textContent;
+            const paymentId = document.getElementById('receipt-payment-id').textContent;
+            const email = document.getElementById('receipt-email').textContent;
+            const date = document.getElementById('receipt-date').textContent;
+
+            const receiptText =
+`═══════════════════════════════
+        SARDEX — CHEK
+═══════════════════════════════
+
+    TO'LOV MUVAFFAQIYATLI
+       Obuna faollashtirildi
+
+-------------------------------
+TO'LANGAN SUMMA:
+      ${amount} so'm
+-------------------------------
+
+Buyurtma №:    ${orderId}
+To'lov ID:     ${paymentId}
+Email:         ${email}
+Sana:          ${date}
+To'lov usuli:  Click (UZCARD)
+
+═══════════════════════════════
+ Xaridingiz uchun rahmat!
+═══════════════════════════════
+`;
+
+            const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chek-${orderId.replace('#', '')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>

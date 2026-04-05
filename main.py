@@ -37,6 +37,23 @@ def payment_result(order_id: int, db: Session = Depends(get_db)):
     return template.render(order=order, OrderStatus=OrderStatus)
 
 
+@app.get("/api/receipt/{order_id}")
+def get_receipt(order_id: int, db: Session = Depends(get_db)):
+    """Return order data for receipt display."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        return JSONResponse({"error": "Order not found"}, status_code=404)
+    return {
+        "order_id": order.id,
+        "email": order.user_email,
+        "amount": order.amount,
+        "status": order.status,
+        "payment_id": order.payment_id,
+        "created_at": order.created_at.strftime("%d.%m.%Y %H:%M:%S") if order.created_at else None,
+        "paid_at": order.paid_at.strftime("%d.%m.%Y %H:%M:%S") if order.paid_at else None,
+    }
+
+
 # ─── Card Token Payment Flow (on-site) ───────────────────
 
 @app.post("/api/create-order")
@@ -129,24 +146,38 @@ async def api_pay_with_token(
     error_code = result.get("error_code", -1)
     payment_id = result.get("payment_id")
 
-    # -501 means payment status unknown — check status after a short delay
+    # -501 means payment status unknown — poll payment/status to confirm
     if error_code == -501 and payment_id:
         order.payment_id = payment_id
         db.commit()
-        await asyncio.sleep(2)
-        status = await check_payment_status(str(payment_id))
-        payment_status = status.get("payment_status")
-        if payment_status == 2:  # 2 = successful
+
+        # Poll status up to 5 times with 2-second intervals
+        confirmed = False
+        for attempt in range(5):
+            await asyncio.sleep(2)
+            status = await check_payment_status(str(payment_id))
+            payment_status = status.get("payment_status")
+            if payment_status == 2:  # 2 = successful
+                confirmed = True
+                break
+            if payment_status is not None and payment_status < 0:
+                # Negative status = failed
+                break
+
+        if confirmed:
             order.status = OrderStatus.PAID
             order.paid_at = datetime.utcnow()
             db.commit()
             print(f"[PAYMENT] Order #{order.id} PAID (after status check) — payment_id: {payment_id}")
-            return {"success": True, "payment_id": payment_id}
+            return {"success": True, "payment_id": payment_id, "order_id": order.id}
         else:
-            order.status = OrderStatus.WAITING
+            order.status = OrderStatus.CANCELLED
             db.commit()
-            print(f"[PAYMENT] Order #{order.id} status unknown — payment_status: {payment_status}")
-            return {"success": True, "payment_id": payment_id, "status": "pending"}
+            print(f"[PAYMENT] Order #{order.id} FAILED — status unknown after polling")
+            return JSONResponse({
+                "error": "To'lov holatini aniqlab bo'lmadi. Iltimos, Click supportga murojaat qiling.",
+                "error_code": -501,
+            }, status_code=400)
 
     if error_code != 0:
         order.status = OrderStatus.CANCELLED
@@ -164,7 +195,7 @@ async def api_pay_with_token(
 
     print(f"[PAYMENT] Order #{order.id} PAID — payment_id: {payment_id}")
 
-    return {"success": True, "payment_id": payment_id}
+    return {"success": True, "payment_id": payment_id, "order_id": order.id}
 
 
 # ─── Click SHOP-API Callbacks (kept for compatibility) ────
